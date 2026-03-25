@@ -1,0 +1,7 @@
+pytelegrambotapi
+dotenv
+psycopg2
+sqlalchemy
+requests
+bs4
+
