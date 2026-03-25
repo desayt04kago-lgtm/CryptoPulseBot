@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy import Integer, String, Boolean, Column
+from sqlalchemy import Integer, String, Boolean, Column, BigInteger
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import declarative_base
 from dotenv import load_dotenv
@@ -13,7 +13,7 @@ Base = declarative_base()
 
 class Users(Base):
     __tablename__ = "users"
-    id = Column(Integer, primary_key=True)
+    id = Column(BigInteger, primary_key=True)
     target = Column(String, nullable=True)
     alerts = Column(Boolean, nullable=False, default=True)
 Base.metadata.create_all(engine)
