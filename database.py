@@ -16,6 +16,7 @@ class Users(Base):
     id = Column(BigInteger, primary_key=True)
     target = Column(String, nullable=True)
     alerts = Column(Boolean, nullable=False, default=True)
+    percent = Column(Integer, nullable=False)
 
 class Coins(Base):
     __tablename__ = "coins"
@@ -38,26 +39,32 @@ def check_new_user(id: int) -> bool:
             return False
     return True
 
-def register_new_user(id: int, target: str, alerts: bool) -> None:
+def register_new_user(id: int, target: str, alerts: bool, percent: int) -> None:
     """
     adds user to DB\n
     :param id:
     :param target:
     :param alerts:
+    :param percent:
     """
     session = Session()
-    user = Users(id=id, target=target, alerts=alerts)
+    user = Users(id=id, target=target, alerts=alerts, percent=percent)
     session.add(user)
     session.commit()
     session.close()
 
+def get_user_percent(id: int) -> int:
+    session = Session()
+    user = session.query(Users).filter(Users.id == id).first()
+    session.close()
+    return user.percent
 
 def add_new_coin(name: str, price: int) -> None:
     """
     adds new coin to DB\n
     :param name:
     :param price:
-    :return:
+    :return:x
     """
     session = Session()
     coin = Coins(id=len(session.query(Coins).all())+1, name=name, price=price)
