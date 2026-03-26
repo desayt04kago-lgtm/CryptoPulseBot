@@ -52,18 +52,21 @@ def register_new_user(id: int, target: str, alerts: bool) -> None:
     session.close()
 
 
-def add_new_coin(id: int, name: str, price: int) -> None:
+def add_new_coin(name: str, price: int) -> None:
     """
     adds new coin to DB\n
-    :param id:
     :param name:
     :param price:
     :return:
     """
     session = Session()
-    coin = Coins(id=id, name=name, price=price)
+    coin = Coins(id=len(session.query(Coins).all())+1, name=name, price=price)
     session.add(coin)
     session.commit()
     session.close()
 
-
+def get_all_coins() -> list:
+    session = Session()
+    all_coins = session.query(Coins).all()
+    session.close()
+    return all_coins
