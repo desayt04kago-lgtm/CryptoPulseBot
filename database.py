@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy import Integer, String, Boolean, Column, BigInteger
+from sqlalchemy import Integer, String, Boolean, Column, BigInteger, Numeric
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import declarative_base
 from dotenv import load_dotenv
@@ -16,6 +16,13 @@ class Users(Base):
     id = Column(BigInteger, primary_key=True)
     target = Column(String, nullable=True)
     alerts = Column(Boolean, nullable=False, default=True)
+
+class Coins(Base):
+    __tablename__ = "coins"
+    id = Column(BigInteger, primary_key=True)
+    name = Column(String, nullable=False)
+    price = Column(Numeric, nullable=False)
+
 Base.metadata.create_all(engine)
 
 def check_new_user(id: int) -> bool:
@@ -41,6 +48,21 @@ def register_new_user(id: int, target: str, alerts: bool) -> None:
     session = Session()
     user = Users(id=id, target=target, alerts=alerts)
     session.add(user)
+    session.commit()
+    session.close()
+
+
+def add_new_coin(id: int, name: str, price: int) -> None:
+    """
+    adds new coin to DB\n
+    :param id:
+    :param name:
+    :param price:
+    :return:
+    """
+    session = Session()
+    coin = Coins(id=id, name=name, price=price)
+    session.add(coin)
     session.commit()
     session.close()
 
