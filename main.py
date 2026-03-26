@@ -6,8 +6,9 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 bot = telebot.TeleBot(os.getenv("tg_bot_token"))
+users_date = {}
 
-def create_menu():
+def create_keyboard_menu():
     """
     Create the menu
     :return kb:
@@ -21,17 +22,23 @@ def create_menu():
 def ask_register_new_user(msg):
     kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True).row("да", "нет")
     bot.send_message(msg.chat.id, "Вы ещё не зарегистрированы! Желаете пройти регистрацию?", reply_markup=kb, reply_to_message_id=msg.id)
-    bot.register_next_step_handler(msg, register_new_user)
+    bot.register_next_step_handler(msg, ask_percent)
+
+def ask_percent(msg):
+    if msg.text.lower().replace(" ", "") == "да":
+        bot.send_message(msg.chat.id, "Введите % при котором вам будет приходить оповещение. (от 5 до 1000)", reply_to_message_id=msg.id)
+        bot.register_next_step_handler(msg, register_new_user)
 
 def register_new_user(msg):
-    if msg.text.lower().replace(" ", "") == "да":
-        database.register_new_user(msg.chat.id, "",True)
-        bot.send_message(msg.chat.id, "Вы зарегистрированы!", reply_markup=create_menu())
+    percent = int(msg.text)
+    if 5 <= percent <= 1000:
+        database.register_new_user(msg.chat.id, "",True, percent)
+        bot.send_message(msg.chat.id, "Вы зарегистрированы!", reply_markup=create_keyboard_menu())
     else:
         choice_page(msg)
 
 def choice_page(msg):
-    bot.send_message(msg.chat.id, "Выберите раздел:", reply_markup=create_menu())
+    bot.send_message(msg.chat.id, "Выберите раздел:", reply_markup=create_keyboard_menu())
 
 @bot.message_handler(content_types=["text"])
 def handler_message(msg):
