@@ -52,12 +52,10 @@ class Parser:
         all_coins = get_all_coins()
         coins_with_new_price = {}
         for coin in all_coins   :
-            percent_difficulty = (float(self.coins[coin.name]) - float(coin.price)) / float(coin.price) * 100
-            if coin.price != self.coins[coin.name] and abs(percent_difficulty) > get_user_percent(user_id):
+            percent_difficulty = abs((float(self.coins[coin.name]) - float(coin.price)) / float(coin.price) * 100)
+            if coin.price != self.coins[coin.name] and percent_difficulty > get_user_percent(user_id):
                 coins_with_new_price[coin.name] = (float(coin.price), float(self.coins[coin.name]), int(percent_difficulty))
         print(coins_with_new_price)
         return coins_with_new_price
 
 parser = Parser("https://coinmarketcap.com/all/views/all/")
-parser.get_all_coins()
-parser.find_coins_with_new_price(5803395877)
