@@ -4,9 +4,11 @@ from telebot.types import InlineKeyboardButton as IKB
 import database
 import os
 from dotenv import load_dotenv
-from parser import parser
+import parser
 
-
+coin_parser = parser.Parser("https://coinmarketcap.com/all/views/all/")
+coin_parser.get_all_coins()
+coin_parser.load_to_database()
 load_dotenv()
 bot = telebot.TeleBot(os.getenv("tg_bot_token"))
 users_date = {}
@@ -21,6 +23,18 @@ def create_keyboard_menu():
     kb.row("Подписки")
     kb.row("Настройки")
     return kb
+
+def create_settings_menu(alert : bool = True, percent : int = "error"):
+    kb = ReplyKeyboardMarkup(resize_keyboard=True)
+    kb.row(f"Поменять процент ({percent}%)")
+    if alert:
+        text = "Отключить рассылку"
+    else:
+        text = "Подключить рассылку"
+    kb.row(text)
+    kb.row("Меню")
+    return kb
+
 
 def ask_register_new_user(msg):
     kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True).row("да", "нет")
@@ -41,7 +55,7 @@ def register_new_user(msg):
         choice_page(msg)
 
 def choice_page(msg):
-    bot.send_message(msg.chat.id, "Выберите раздел:", reply_markup=create_keyboard_menu())
+    bot.send_message(msg.chat.id, "Раздел 'Меню':", reply_markup=create_keyboard_menu())
 
 def show_all_coins(msg):
     all_coins = database.get_all_coins()
@@ -60,17 +74,40 @@ def show_all_coins(msg):
         else:
             text = f"❌ {coin.name} | {price_display}$"
         kb.row(IKB(text, callback_data=f"sub_{coin.id}"))
-    bot.send_message(msg.chat.id, "Раздел: Криптовалюты", reply_markup=kb)
+    bot.send_message(msg.chat.id, f"Раздел: '{msg.text}'", reply_markup=kb)
 
+def subscriptions(msg):
+    all_user_coins_sub = database.get_coins_sub_user(msg.chat.id)
+    all_user_coins = database.get_coin_from_user(all_user_coins_sub.target.split("_"))
+    kb = InlineKeyboardMarkup()
+    kb = InlineKeyboardMarkup()
+    for coin in all_user_coins:
+        price = float(coin.price)
+        # Для стабильных монет (USDT, USDC) - 4 знака
+        # Для остальных - 2 знака
+        if coin.name in ['USDT', 'USDC', 'DAI']:
+            price_display = f"{price:.4f}"
+        else:
+            price_display = f"{price:,.2f}"
+        kb.row(IKB(text = f"✅ {coin.name} | {price_display}$", callback_data=f"unsub_{coin.id}"))
+    bot.send_message(msg.chat.id, f"Раздел: '{msg.text}'\n"
+                                  f"Чтобы отписаться от валюты - нажмите на кнопку ниже", reply_markup=kb)
 
+def settings(msg):
+    user = database.get_user_info(msg.chat.id)
+    bot.send_message(msg.chat.id, f"Раздел '{msg.text}'",
+                     reply_markup=create_settings_menu(user.alerts, user.percent))
 
 @bot.message_handler(content_types=["text"])
 def handler_message(msg):
     func = {
         "Меню" : choice_page,
         "Криптовалюта" : show_all_coins,
-        "Подписки": ...,
-        "Настройки": ...,
+        "Подписки": subscriptions,
+        "Настройки": settings,
+        "Поменять процент" : ...,
+        "Отключить рассылку" : ...,
+        "Подулючить рассылку" : ...,
 
     }
     if database.check_new_user(msg.chat.id):
