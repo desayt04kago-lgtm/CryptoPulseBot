@@ -158,26 +158,36 @@ def get_all_coins() -> list:
     session.close()
     return all_coins
 
-def get_coins_sub_user(id: int) -> str:
+def get_coins_sub_user(id: int) -> list:
     """
-    Получает список ID монет, на которые подписан пользователь
+    Получает объект пользователя из базы данных
 
     Выполняет поиск пользователя по ID в таблице Users и возвращает
-    значение поля target. Поле содержит строку с ID монет, разделённых
-    подчёркиванием (например, "2_5_10" для BTC, XRP, DOGE).
+    полный объект модели Users. Содержит все поля пользователя:
+    - id: ID пользователя в Telegram
+    - target: Строка с ID подписок (например, "2_5_10")
+    - alerts: Статус уведомлений (True/False)
+    - percent: Процент изменения для алерта
 
-    Используется для отображения галочек/статуса подписки в списке монет.
+    Используется для получения всей информации о пользователе,
+    включая его подписки на криптовалюты.
 
     :param id: ID пользователя в Telegram (chat.id)
-    :return: Строка с ID подписок через подчёркивание
-             Пример: "2_5_10" или "" если нет подписок
-    :raises AttributeError: Если пользователь не найден в базе данных
-
+    :return: Объект модели Users с данными пользователя
+             Пример: Users(id=5803395877, target="2_5_10", alerts=True, percent=5)
+    :raises AttributeError: Если пользователь не найден (вернёт None)
     Пример:
-        #>>> get_coins_sub_user(5803395877)
-        "2_5_10"  # Пользователь подписан на монеты с id 2, 5 и 10
+        #>>> user = get_coins_sub_user(5803395877)
+        #>>> user.target
+        "2_5_10"  # Строка с ID подписок
+
+        #>>> user.percent
+        5  # Порог изменения цены в процентах
+
+        #>>> user.alerts
+        True  # Уведомления включены
     """
     session = Session()
     coins = session.query(Users).filter(Users.id == id).first()
     session.close()
-    return coins.target
+    return coins
