@@ -58,4 +58,3 @@ class Parser:
         print(coins_with_new_price)
         return coins_with_new_price
 
-parser = Parser("https://coinmarketcap.com/all/views/all/")
