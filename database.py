@@ -212,3 +212,28 @@ def get_coin_from_user(coins_id: list) -> list:
     session.close()
     return coins
 
+def get_user_info(id: int) -> dict:
+    """
+    Получает полную информацию о пользователе из базы данных
+
+    Выполняет поиск пользователя по ID в таблице Users и возвращает
+    объект модели со всеми полями: id, target, alerts, percent.
+
+    Используется для получения настроек пользователя перед отправкой
+    уведомлений или при проверке статуса подписки.
+
+    :param id: ID пользователя в Telegram (chat.id)
+    :type id: int
+    :return: Объект модели Users с данными пользователя
+             Пример: Users(id=5803395877, target="2_5_10", alerts=True, percent=5)
+             Если пользователь не найден — возвращает None
+    :rtype: Users или None
+
+    Пример:
+        >>> get_user_info(5803395877)
+        Users(id=5803395877, target="2_5_10", alerts=True, percent=5)
+    """
+    session = Session()
+    user_info = session.query(Users).filter(Users.id == id).first()
+    session.close()
+    return user_info
