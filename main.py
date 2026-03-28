@@ -45,7 +45,7 @@ def choice_page(msg):
 
 def show_all_coins(msg):
     all_coins = database.get_all_coins()
-    all_user_target = database.get_coins_sub_user(msg.chat.id)
+    all_user_coins = database.get_coins_sub_user(msg.chat.id)
     kb = InlineKeyboardMarkup()
     for coin in all_coins:
         price = float(coin.price)
@@ -55,7 +55,7 @@ def show_all_coins(msg):
             price_display = f"{price:.4f}"
         else:
             price_display = f"{price:,.2f}"
-        if coin.id in map(int, all_user_target.split("_")):
+        if coin.id in map(int, all_user_coins.target.split("_")):
             text = f"✅ {coin.name} | {price_display}$"
         else:
             text = f"❌ {coin.name} | {price_display}$"
