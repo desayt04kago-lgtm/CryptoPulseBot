@@ -185,3 +185,30 @@ def get_coins_sub_user(id: int) -> list:
     coins = session.query(Users).filter(Users.id == id).first()
     session.close()
     return coins
+
+def get_coin_from_user(coins_id: list) -> list:
+    """
+    Получает объекты криптовалют по списку ID
+
+    Выполняет поиск монет в таблице Coins по переданным ID и возвращает
+    список объектов моделей. Используется для получения информации о монетах,
+    на которые подписан пользователь (например, для отправки уведомлений).
+
+    Для каждого ID из списка делается отдельный запрос к базе данных.
+    Если монета с указанным ID не найдена, в список добавляется None.
+
+    :param coins_id: Список ID монет для получения
+                     Пример: [2, 5, 10] для BTC, XRP, DOGE
+    :type coins_id: list
+    :return: Список объектов модели Coins
+             Пример: [Coins(id=2, name='BTC', price=50000), Coins(id=5, name='XRP', price=1.34), ...]
+             Если монета не найдена — на её месте будет None
+    :rtype: list
+    """
+    session = Session()
+    coins = []
+    for coin in coins_id:
+        coins.append(session.query(Coins).filter(Coins.id == coin).first())
+    session.close()
+    return coins
+
