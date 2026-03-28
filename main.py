@@ -4,6 +4,9 @@ from telebot.types import InlineKeyboardButton as IKB
 import database
 import os
 from dotenv import load_dotenv
+from parser import parser
+
+
 load_dotenv()
 bot = telebot.TeleBot(os.getenv("tg_bot_token"))
 users_date = {}
@@ -40,18 +43,42 @@ def register_new_user(msg):
 def choice_page(msg):
     bot.send_message(msg.chat.id, "Выберите раздел:", reply_markup=create_keyboard_menu())
 
+def show_all_coins(msg):
+    all_coins = database.get_all_coins()
+    all_user_target = database.get_coins_sub_user(msg.chat.id)
+    kb = InlineKeyboardMarkup()
+    for coin in all_coins:
+        price = float(coin.price)
+        # Для стабильных монет (USDT, USDC) - 4 знака
+        # Для остальных - 2 знака
+        if coin.name in ['USDT', 'USDC', 'DAI']:
+            price_display = f"{price:.4f}"
+        else:
+            price_display = f"{price:,.2f}"
+        if coin.id in map(int, all_user_target.split("_")):
+            text = f"✅ {coin.name} | {price_display}$"
+        else:
+            text = f"❌ {coin.name} | {price_display}$"
+        kb.row(IKB(text, callback_data=f"sub_{coin.id}"))
+    bot.send_message(msg.chat.id, "Раздел: Криптовалюты", reply_markup=kb)
+
+
+
 @bot.message_handler(content_types=["text"])
 def handler_message(msg):
     func = {
         "Меню" : choice_page,
-        "Криптовалюта" : ...,
+        "Криптовалюта" : show_all_coins,
         "Подписки": ...,
         "Настройки": ...,
 
     }
     if database.check_new_user(msg.chat.id):
         ask_register_new_user(msg)
+    if not(database.check_new_user(msg.chat.id)) and msg.text in func.keys():
+        func[msg.text](msg)
     else:
         choice_page(msg)
+
 
 bot.infinity_polling()
