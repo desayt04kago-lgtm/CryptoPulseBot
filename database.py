@@ -143,7 +143,7 @@ def get_all_coins() -> list:
     Возвращает список объектов Coins со всеми монетами и их ценами.
     Используется для сравнения текущих цен с ценами в БД.
 
-    :return: Список объектов Coins [Coins(id=1, name='BTC', price=50000), ...]
+    :return: Список объектов Coins [Coins(id=1, name='BTC', price=50000), ...] (отсортированный по id)
     :rtype: list
 
     Пример:
@@ -154,6 +154,30 @@ def get_all_coins() -> list:
         ETH: 3000.00
     """
     session = Session()
-    all_coins = session.query(Coins).all()
+    all_coins = session.query(Coins).order_by(Coins.id).all()
     session.close()
     return all_coins
+
+def get_coins_sub_user(id: int) -> str:
+    """
+    Получает список ID монет, на которые подписан пользователь
+
+    Выполняет поиск пользователя по ID в таблице Users и возвращает
+    значение поля target. Поле содержит строку с ID монет, разделённых
+    подчёркиванием (например, "2_5_10" для BTC, XRP, DOGE).
+
+    Используется для отображения галочек/статуса подписки в списке монет.
+
+    :param id: ID пользователя в Telegram (chat.id)
+    :return: Строка с ID подписок через подчёркивание
+             Пример: "2_5_10" или "" если нет подписок
+    :raises AttributeError: Если пользователь не найден в базе данных
+
+    Пример:
+        #>>> get_coins_sub_user(5803395877)
+        "2_5_10"  # Пользователь подписан на монеты с id 2, 5 и 10
+    """
+    session = Session()
+    coins = session.query(Users).filter(Users.id == id).first()
+    session.close()
+    return coins.target
