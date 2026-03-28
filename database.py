@@ -116,23 +116,17 @@ def add_new_coin(name: str, price: float) -> None:
     """
     Добавляет или обновляет цену монеты в базе данных
 
-    Использует session.merge() для автоматического определения:
-    - Если монета с таким name существует → обновляет цену
-    - Если монеты нет → создаёт новую запись
-
-    Вызывается при каждом парсинге CoinMarketCap для актуализации цен.
-
     :param name: Символ монеты (BTC, ETH, USDT и т.д.)
-    :param price: Текущая цена монеты в USD (например, 50000.00)
+    :param price: Текущая цена монеты в USD
     :return: None
-
-    Пример:
-        # >>> add_new_coin('BTC', 50000.00)
-        # Цена BTC обновлена или добавлена новая запись
     """
     session = Session()
-    coin = Coins(name=name, price=price)
-    session.merge(coin)
+    coin = session.query(Coins).filter(Coins.name == name).first()
+    if coin:
+        coin.price = price
+    else:
+        coin = Coins(name=name, price=price)
+        session.add(coin)
     session.commit()
     session.close()
 
