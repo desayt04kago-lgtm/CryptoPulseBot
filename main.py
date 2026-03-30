@@ -80,7 +80,6 @@ def subscriptions(msg):
     all_user_coins_sub = database.get_coins_sub_user(msg.chat.id)
     all_user_coins = database.get_coin_from_user(all_user_coins_sub.target.split("_"))
     kb = InlineKeyboardMarkup()
-    kb = InlineKeyboardMarkup()
     for coin in all_user_coins:
         price = float(coin.price)
         # Для стабильных монет (USDT, USDC) - 4 знака
@@ -98,6 +97,28 @@ def settings(msg):
     bot.send_message(msg.chat.id, f"Раздел '{msg.text}'",
                      reply_markup=create_settings_menu(user.alerts, user.percent))
 
+def new_percent(msg):
+    bot.send_message(msg.chat.id, "Введите новый процент: ")
+    bot.register_next_step_handler(msg, change_percent)
+
+def change_percent(msg):
+    percent = int(msg.text)
+    if 0 < percent <= 100:
+        database.update_user_percent(msg.chat.id, percent)
+        bot.send_message(msg.chat.id, "Данные внесены!", reply_markup=create_keyboard_menu())
+
+def update_alerts(msg):
+    if msg.text == "Отключить рассылку":
+        new_alert = False
+        text = "Рассылка отключена📴"
+    else:
+        new_alert = True
+        text = "Рассылка включена🔛"
+    database.update_user_alert(msg.chat.id, new_alert)
+    bot.send_message(msg.chat.id, text, reply_markup=create_keyboard_menu())
+
+
+
 @bot.message_handler(content_types=["text"])
 def handler_message(msg):
     func = {
@@ -105,15 +126,19 @@ def handler_message(msg):
         "Криптовалюта" : show_all_coins,
         "Подписки": subscriptions,
         "Настройки": settings,
-        "Поменять процент" : ...,
-        "Отключить рассылку" : ...,
-        "Подулючить рассылку" : ...,
+        "Поменять процент" : new_percent,
+        "Отключить рассылку": update_alerts,
+        "Подключить рассылку" : update_alerts,
 
     }
     if database.check_new_user(msg.chat.id):
         ask_register_new_user(msg)
-    if not(database.check_new_user(msg.chat.id)) and msg.text in func.keys():
-        func[msg.text](msg)
+    if not(database.check_new_user(msg.chat.id)):
+        if msg.text.startswith("Поменять процент"):
+            new_percent(msg)
+            return
+        if msg.text in func.keys():
+            func[msg.text](msg)
     else:
         choice_page(msg)
 
