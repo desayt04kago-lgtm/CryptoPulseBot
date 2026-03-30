@@ -208,7 +208,8 @@ def get_coin_from_user(coins_id: list) -> list:
     session = Session()
     coins = []
     for coin in coins_id:
-        coins.append(session.query(Coins).filter(Coins.id == coin).first())
+        if coin and coin.strip():
+            coins.append(session.query(Coins).filter(Coins.id == coin).first())
     session.close()
     return coins
 
@@ -266,6 +267,7 @@ def update_user_percent(id: int, new_percent: int) -> bool:
     if user:
         user.percent = new_percent
         session.commit()
+        session.close()
         return True
 
     session.close()
@@ -299,7 +301,48 @@ def update_user_alert(id: int, new_alert: bool) -> bool:
     if user:
         user.alerts = new_alert
         session.commit()
+        session.close()
         return True
 
+    session.close()
+    return False
+
+def add_coin_to_target(id: int, add_coin_id: str) -> bool:
+    """
+    Добавляет ID монеты в список подписок пользователя
+    :param id: ID пользователя в Telegram
+    :param add_coin_id: ID монеты для добавления
+    :return: True если успешно, False если пользователь не найден
+    """
+    session = Session()
+    user = session.query(Users).filter(Users.id == id).first()
+    if user:
+        all_coin_id = user.target.split("_")
+        if add_coin_id not in all_coin_id:
+            all_coin_id.append(add_coin_id)
+        user.target = "_".join(all_coin_id)
+        session.commit()
+        return True
+    session.close()
+    return False
+
+def delete_coin_from_target(id: int, del_coin_id: str) -> bool:
+    """
+    Удаляет ID монеты из списка подписок пользователя
+    :param id: ID пользователя в Telegram
+    :param del_coin_id: ID монеты для удаления
+    :return: True если успешно, False если пользователь не найден
+    """
+    session = Session()
+    user = session.query(Users).filter(Users.id == id).first()
+    if user:
+        all_coin_id = user.target.split("_")
+        for coin_id in all_coin_id:
+            if coin_id == del_coin_id:
+                all_coin_id.remove(del_coin_id)
+        user.target = "_".join(all_coin_id)
+        session.commit()
+        session.close()
+        return True
     session.close()
     return False
