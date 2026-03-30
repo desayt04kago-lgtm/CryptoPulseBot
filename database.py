@@ -230,10 +230,76 @@ def get_user_info(id: int) -> dict:
     :rtype: Users или None
 
     Пример:
-        >>> get_user_info(5803395877)
+        #>>> get_user_info(5803395877)
         Users(id=5803395877, target="2_5_10", alerts=True, percent=5)
     """
     session = Session()
     user_info = session.query(Users).filter(Users.id == id).first()
     session.close()
     return user_info
+
+
+def update_user_percent(id: int, new_percent: int) -> bool:
+    """
+    Обновляет процент изменения цены для пользователя
+
+    Изменяет значение поля percent в таблице Users для указанного пользователя.
+    Используется когда пользователь хочет изменить порог срабатывания уведомлений.
+
+    :param id: ID пользователя в Telegram (chat.id)
+    :type id: int
+    :param new_percent: Новый процент изменения (например, 5 для 5%)
+    :type new_percent: int
+    :return: True если обновление успешно, False если пользователь не найден
+    :rtype: bool
+
+    Пример:
+        #>>> update_user_percent(5803395877, 10)
+        True  # Процент изменён на 10%
+
+        #>>> update_user_percent(1234567890, 5)
+        False  # Пользователь не найден
+    """
+    session = Session()
+    user = session.query(Users).filter(Users.id == id).first()
+
+    if user:
+        user.percent = new_percent
+        session.commit()
+        return True
+
+    session.close()
+    return False
+
+def update_user_alert(id: int, new_alert: bool) -> bool:
+    """
+    Обновляет статус уведомлений для пользователя
+
+    Изменяет значение поля alerts в таблице Users для указанного пользователя.
+    Используется когда пользователь хочет включить или выключить получение
+    уведомлений об изменении цен криптовалют.
+
+    :param id: ID пользователя в Telegram (chat.id)
+    :type id: int
+    :param new_alert: Новый статус уведомлений (True = включены, False = выключены)
+    :type new_alert: bool
+    :return: True если обновление успешно, False если пользователь не найден
+    :rtype: bool
+
+    Пример:
+        #>>> update_user_alert(5803395877, True)
+        True  # Уведомления включены
+
+        #>>> update_user_alert(5803395877, False)
+        True  # Уведомления выключены
+    """
+    session = Session()
+    user = session.query(Users).filter(Users.id == id).first()
+
+    if user:
+        user.alerts = new_alert
+        session.commit()
+        return True
+
+    session.close()
+    return False
