@@ -35,6 +35,44 @@ def create_settings_menu(alert : bool = True, percent : int = "error"):
     kb.row("Меню")
     return kb
 
+def create_keyboard_all_coins(chat_id):
+    all_coins = database.get_all_coins()
+    user = database.get_coins_sub_user(chat_id)
+    all_user_coins = user.target.split("_")
+    print(all_user_coins)
+    if '' in all_user_coins:
+        all_user_coins.remove('')
+    kb = InlineKeyboardMarkup()
+    for coin in all_coins:
+        price = float(coin.price)
+        # Для стабильных монет (USDT, USDC) - 4 знака
+        # Для остальных - 2 знака
+        if coin.name in ['USDT', 'USDC', 'DAI']:
+            price_display = f"{price:.4f}"
+        else:
+            price_display = f"{price:,.2f}"
+        if coin.id in map(int, all_user_coins):
+            text = f"✅ {coin.name} | {price_display}$"
+        else:
+            text = f"❌ {coin.name} | {price_display}$"
+        kb.row(IKB(text, callback_data=f"sub_{coin.id}_{coin.name}"))
+    return kb
+
+def create_keyboard_subscriptions(chat_id):
+    all_user_coins_sub = database.get_coins_sub_user(chat_id)
+    all_user_coins = database.get_coin_from_user(all_user_coins_sub.target.split("_"))
+    kb = InlineKeyboardMarkup()
+    for coin in all_user_coins:
+        price = float(coin.price)
+        # Для стабильных монет (USDT, USDC) - 4 знака
+        # Для остальных - 2 знака
+        if coin.name in ['USDT', 'USDC', 'DAI']:
+            price_display = f"{price:.4f}"
+        else:
+            price_display = f"{price:,.2f}"
+        kb.row(IKB(text=f"✅ {coin.name} | {price_display}$", callback_data=f"unsub_{coin.id}_{coin.name}"))
+    return kb
+
 
 def ask_register_new_user(msg):
     kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True).row("да", "нет")
@@ -58,39 +96,12 @@ def choice_page(msg):
     bot.send_message(msg.chat.id, "Раздел 'Меню':", reply_markup=create_keyboard_menu())
 
 def show_all_coins(msg):
-    all_coins = database.get_all_coins()
-    all_user_coins = database.get_coins_sub_user(msg.chat.id)
-    kb = InlineKeyboardMarkup()
-    for coin in all_coins:
-        price = float(coin.price)
-        # Для стабильных монет (USDT, USDC) - 4 знака
-        # Для остальных - 2 знака
-        if coin.name in ['USDT', 'USDC', 'DAI']:
-            price_display = f"{price:.4f}"
-        else:
-            price_display = f"{price:,.2f}"
-        if coin.id in map(int, all_user_coins.target.split("_")):
-            text = f"✅ {coin.name} | {price_display}$"
-        else:
-            text = f"❌ {coin.name} | {price_display}$"
-        kb.row(IKB(text, callback_data=f"sub_{coin.id}"))
-    bot.send_message(msg.chat.id, f"Раздел: '{msg.text}'", reply_markup=kb)
+    bot.send_message(msg.chat.id, f"Раздел: '{msg.text}'", reply_markup=create_keyboard_all_coins(msg.chat.id))
 
 def subscriptions(msg):
-    all_user_coins_sub = database.get_coins_sub_user(msg.chat.id)
-    all_user_coins = database.get_coin_from_user(all_user_coins_sub.target.split("_"))
-    kb = InlineKeyboardMarkup()
-    for coin in all_user_coins:
-        price = float(coin.price)
-        # Для стабильных монет (USDT, USDC) - 4 знака
-        # Для остальных - 2 знака
-        if coin.name in ['USDT', 'USDC', 'DAI']:
-            price_display = f"{price:.4f}"
-        else:
-            price_display = f"{price:,.2f}"
-        kb.row(IKB(text = f"✅ {coin.name} | {price_display}$", callback_data=f"unsub_{coin.id}"))
     bot.send_message(msg.chat.id, f"Раздел: '{msg.text}'\n"
-                                  f"Чтобы отписаться от валюты - нажмите на кнопку ниже", reply_markup=kb)
+                    f"Чтобы отписаться от валюты - нажмите на кнопку ниже",
+                     reply_markup=create_keyboard_subscriptions(msg.chat.id))
 
 def settings(msg):
     user = database.get_user_info(msg.chat.id)
@@ -116,6 +127,28 @@ def update_alerts(msg):
         text = "Рассылка включена🔛"
     database.update_user_alert(msg.chat.id, new_alert)
     bot.send_message(msg.chat.id, text, reply_markup=create_keyboard_menu())
+
+@bot.callback_query_handler(func=lambda call: True)
+def callback(call):
+    action, id, name = call.data.split("_")
+    print(action, id, name)
+    text = ""
+    if action == "sub":
+        database.add_coin_to_target(call.message.chat.id, id)
+        bot.edit_message_reply_markup(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            reply_markup=create_keyboard_all_coins(call.message.chat.id)
+        )
+        bot.answer_callback_query(call.id, f"{name} добавлен в подписки!", show_alert=False)
+    elif action == "unsub":
+        database.delete_coin_from_target(call.message.chat.id, id)
+        bot.edit_message_reply_markup(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            reply_markup=create_keyboard_subscriptions(call.message.chat.id)
+        )
+        bot.answer_callback_query(call.id, f"{name} убран из подписок", show_alert=False)
 
 
 
