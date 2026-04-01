@@ -346,3 +346,34 @@ def delete_coin_from_target(id: int, del_coin_id: str) -> bool:
         return True
     session.close()
     return False
+
+def get_all_users_with_alerts() -> list:
+    """
+    Получает список всех пользователей с активными уведомлениями
+
+    Выполняет выборку всех пользователей из таблицы Users и фильтрует
+    только тех, у кого включены уведомления (поле alerts = True).
+    Используется для рассылки уведомлений об изменении цен криптовалют.
+
+    :return: Список объектов модели Users, у которых alerts = True
+             Пример: [Users(id=5803395877, target="2_5_10", alerts=True, percent=5), ...]
+             Если нет пользователей с активными уведомлениями — возвращает пустой список []
+    :rtype: list
+
+    Пример:
+        #>>> get_all_users_with_alerts()
+        [Users(id=5803395877, target="2_5_10", alerts=True, percent=5),
+         Users(id=1234567890, target="3_7", alerts=True, percent=10)]
+
+        #>>> get_all_users_with_alerts()
+        []  # Нет пользователей с включёнными уведомлениями
+    """
+    users_with_alerts = []
+    session = Session()
+    users = session.query(Users).all()
+    for user in users:
+        if user.alerts:
+            users_with_alerts.append(user)
+    session.close()
+    return users_with_alerts
+
