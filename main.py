@@ -5,6 +5,8 @@ import database
 import os
 from dotenv import load_dotenv
 import parser
+import time
+import threading
 
 coin_parser = parser.Parser("https://coinmarketcap.com/all/views/all/")
 coin_parser.get_all_coins()
@@ -150,8 +152,6 @@ def callback(call):
         )
         bot.answer_callback_query(call.id, f"{name} убран из подписок", show_alert=False)
 
-
-
 @bot.message_handler(content_types=["text"])
 def handler_message(msg):
     func = {
@@ -175,5 +175,28 @@ def handler_message(msg):
     else:
         choice_page(msg)
 
+def notification():
+    users_with_alerts = database.get_all_users_with_alerts()
+    for user in users_with_alerts:
+        user_coins = [int(x) for x in user.target.split("_") if x and x.strip()]
+        new_coin_prices = coin_parser.find_coins_with_new_price(user.id)
+        send_status = False
+        if new_coin_prices:
+            text = f"Криптовалюты, цены которых изменились минимум на {user.percent}%\n"
+            for name_coin in new_coin_prices.keys():
+                if new_coin_prices[name_coin][3] in user_coins:
+                    text += f"\n{name_coin} | {new_coin_prices[name_coin][1]}$ -> {new_coin_prices[name_coin][0]}$ | {new_coin_prices[name_coin][2]}%\n"
+                    send_status = True
+            if send_status:
+                bot.send_message(user.id, text, reply_markup=create_keyboard_menu())
+                coin_parser.load_to_database()
+
+def run_periodic_notification():
+    while True:
+        time.sleep(1200)  # 1200 секунд = 60 минут
+        notification()
+
+price_checker_thread = threading.Thread(target=run_periodic_notification, daemon=True)
+price_checker_thread.start()
 
 bot.infinity_polling()
