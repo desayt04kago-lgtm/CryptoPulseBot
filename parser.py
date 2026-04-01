@@ -46,15 +46,15 @@ class Parser:
         (получает через get_user_percent).
 
         :param user_id: ID пользователя в Telegram для получения его порога процента
-        :return: Словарь {символ: (старая_цена, новая_цена, процент_изменения)}
-               например: {'BTC': (50000.0, 52500.0, 5)}
+        :return: Словарь {символ: (старая_цена, новая_цена, процент_изменения, id_монеты_в_БД)}
+               например: {'BTC': (50000.0, 52500.0, 5, 2)}
         """
         all_coins = get_all_coins()
         coins_with_new_price = {}
         for coin in all_coins   :
             percent_difficulty = abs((float(self.coins[coin.name]) - float(coin.price)) / float(coin.price) * 100)
             if coin.price != self.coins[coin.name] and percent_difficulty > get_user_percent(user_id):
-                coins_with_new_price[coin.name] = (float(coin.price), float(self.coins[coin.name]), int(percent_difficulty))
+                coins_with_new_price[coin.name] = (float(coin.price), float(self.coins[coin.name]), int(percent_difficulty), coin.id)
         print(coins_with_new_price)
         return coins_with_new_price
 
